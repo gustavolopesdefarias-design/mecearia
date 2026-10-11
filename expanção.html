@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mercearia Online - Faça seu Pedido</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f8; color: #333; padding-bottom: 90px; }
+        
+        header { background-color: #2e7d32; color: #fff; padding: 20px; text-align: center; position: relative; }
+        header h1 { font-size: 1.5rem; margin-bottom: 5px; }
+        header p { font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; }
+        .frete-info { font-size: 0.85rem; background: rgba(0,0,0,0.15); display: inline-block; padding: 4px 10px; border-radius: 12px; font-weight: 600; margin-top: 4px; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 15px; }
+
+        .admin-toggle-container { margin-bottom: 15px; text-align: right; }
+        .btn-admin-toggle { background: #ff8f00; color: #fff; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
+        
+        /* Painel Admin e Tela de Login */
+        .admin-panel { background: #fff; border-radius: 10px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #ff8f00; display: none; }
+        .admin-panel.open { display: block; }
+        .admin-panel h3 { font-size: 1.1rem; margin-bottom: 12px; color: #1b5e20; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+
+        .btn-salvar { background-color: #2e7d32; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.95rem; }
+        .btn-login { background-color: #1b5e20; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.95rem; }
+
+        /* Abas de Categorias */
+        .categorias { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 15px; }
+        .cat-btn { background: #fff; border: 1px solid #ddd; padding: 8px 16px; border-radius: 20px; white-space: nowrap; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #666; }
+        .cat-btn.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
+        /* Lista de Produtos */
+        .produtos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .produto-card { background: #fff; border-radius: 10px; padding: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; }
+        .produto-info h3 { font-size: 0.95rem; margin-bottom: 5px; color: #333; }
+        .produto-info .unidade { font-size: 0.75rem; color: #777; margin-bottom: 8px; }
+        .produto-info .preco { font-size: 1rem; font-weight: bold; color: #1b5e20; margin-bottom: 10px; }
+
+        .btn-acoes-card { display: flex; gap: 5px; }
+        .btn-add { background-color: #2e7d32; color: #fff; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: 600; flex: 1; }
+        .btn-del-prod { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; display: none; }
+
+        /* Carrinho Flutuante e Modal */
+        .carrinho-flutuante { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 15px; display: none; justify-content: space-between; align-items: center; z-index: 100; }
+        .carrinho-info { font-size: 0.95rem; font-weight: 600; }
+        .btn-checkout { background-color: #ff8f00; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: flex-end; z-index: 200; }
+        .modal.open { display: flex; }
+        .modal-content { background: #fff; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 20px; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .close-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #777; }
+        .resumo-carrinho { background: #f9f9f9; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; }
+        .resumo-item { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .btn-enviar-whats { background-color: #25d366; color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; width: 100%; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mercearia do Bairro</h1>
+        <p>Escolha seus produtos e peça direto pelo WhatsApp!</p>
+        <div class="frete-info">🚚 Entrega grátis para compras acima de R$ 70,00 com distância de até 20km</div>
+    </header>
+
+    <div class="container">
+        <!-- Botão para abrir a área administrativa -->
+        <div class="admin-toggle-container">
+            <button class="btn-admin-toggle" onclick="alternarPainelAdmin()">⚙️ Painel Admin</button>
+        </div>
+
+        <!-- Painel de Login e Cadastro -->
+        <div class="admin-panel" id="adminPanel">
+            <!-- Tela de Login -->
+            <div id="divLogin">
+                <h3>🔒 Acesso Restrito ao Administrador</h3>
+                <div class="form-group">
+                    <label>Usuário:</label>
+                    <input type="text" id="usuarioInput" placeholder="Digite o usuário">
+                </div>
+                <div class="form-group">
+                    <label>Senha:</label>
+                    <input type="password" id="senhaInput" placeholder="Digite a senha">
+                </div>
+                <button class="btn-login" onclick="fazerLogin()">Entrar</button>
+            </div>
+
+            <!-- Tela de Cadastro -->
+            <div id="divCadastro" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h3 style="margin: 0;">➕ Cadastrar Novo Produto</h3>
+                    <button onclick="fazerLogout()" style="background: #c62828; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Sair</button>
+                </div>
+                <div class="form-group">
+                    <label>Nome do Produto:</label>
+                    <input type="text" id="novoNome" placeholder="Ex: Café Torrado 500g">
+                </div>
+                <div class="form-group">
+                    <label>Categoria:</label>
+                    <select id="novaCategoria">
+                        <option value="hortifruti">Hortifrúti</option>
+                        <option value="mercearia">Mercearia</option>
+                        <option value="bebidas">Bebidas</option>
+                        <option value="limpeza">Limpeza</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Preço (R$):</label>
+                    <input type="number" step="0.01" id="novoPreco" placeholder="Ex: 14.90">
+                </div>
+                <div class="form-group">
+                    <label>Unidade de Medida:</label>
+                    <input type="text" id="novaUnidade" placeholder="Ex: Unidade, Quilo (kg), Pacote 1kg">
+                </div>
+                <button class="btn-salvar" onclick="cadastrarProduto()">Salvar e Publicar Produto</button>
+            </div>
+        </div>
+
+        <!-- Abas de Categorias -->
+        <div class="categorias">
+            <button class="cat-btn active" onclick="filtrarCategoria('todos')">Todos</button>
+            <button class="cat-btn" onclick="filtrarCategoria('hortifruti')">Hortifrúti</button>
+            <button class="cat-btn" onclick="filtrarCategoria('mercearia')">Mercearia</button>
+            <button class="cat-btn" onclick="filtrarCategoria('bebidas')">Bebidas</button>
+            <button class="cat-btn" onclick="filtrarCategoria('limpeza')">Limpeza</button>
+        </div>
+
+        <!-- Grade de Produtos -->
+        <div class="produtos-grid" id="produtosGrid"></div>
+    </div>
+
+    <!-- Carrinho Flutuante -->
+    <div class="carrinho-flutuante" id="carrinhoFlutuante">
+        <div class="carrinho-info" id="carrinhoInfo">0 itens | R$ 0,00</div>
+        <button class="btn-checkout" onclick="abrirModal()">Ver Carrinho</button>
+    </div>
+
+    <!-- Modal de Checkout -->
+    <div class="modal" id="modalCheckout">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Finalizar Pedido</h3>
+                <button class="close-btn" onclick="fecharModal()">&times;</button>
+            </div>
+            <div class="resumo-carrinho" id="resumoCarrinhoModal"></div>
+            <div class="form-group">
+                <label>Seu Nome Completo:</label>
+                <input type="text" id="inputNome" placeholder="Ex: João da Silva">
+            </div>
+            <div class="form-group">
+                <label>Endereço de Entrega (Rua, Número, Bairro):</label>
+                <input type="text" id="inputEndereco" placeholder="Ex: Rua das Flores, 120 - Centro">
+            </div>
+            <div class="form-group">
+                <label>Forma de Pagamento:</label>
+                <select id="selectPagamento">
+                    <option value="Pix">Pix (Enviaremos a chave no chat)</option>
+                    <option value="Dinheiro">Dinheiro (Levar troco)</option>
+                    <option value="Cartão na Entrega">Cartão (Débito/Crédito na maquininha)</option>
+                </select>
+            </div>
+            <button class="btn-enviar-whats" onclick="enviarPedidoWhatsApp()">Enviar Pedido pelo WhatsApp</button>
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_USER = "admin";
+        const ADMIN_PASS = "1234";
+
+        const produtosIniciais = [
+            { id: 1, nome: "Arroz Branco 5kg", categoria: "mercearia", preco: 24.90, unidade: "Fardo 5kg" },
+            { id: 2, nome: "Feijão Carioca 1kg", categoria: "mercearia", preco: 8.50, unidade: "Pacote 1kg" },
+            { id: 3, nome: "Óleo de Soja 900ml", categoria: "mercearia", preco: 6.90, unidade: "Unidade" },
+            { id: 4, nome: "Banana Prata", categoria: "hortifruti", preco: 5.99, unidade: "Quilo (kg)" },
+            { id: 5, nome: "Tomate Longa Vida", categoria: "hortifruti", preco: 7.50, unidade: "Quilo (kg)" },
+            { id: 6, nome: "Refrigerante Cola 2L", categoria: "bebidas", preco: 9.50, unidade: "Garrafa 2L" },
+            { id: 7, nome: "Detergente Líquido 500ml", categoria: "limpeza", preco: 2.50, unidade: "Unidade" }
+        ];
+
+        let produtos = JSON.parse(localStorage.getItem('mercearia_produtos')) || produtosIniciais;
+        let carrinho = {}; 
+        let categoriaAtual = 'todos';
+        let adminLogado = false;
+        let adminAberto = false;
+
+        function alternarPainelAdmin() {
+            adminAberto = !adminAberto;
+            const painel = document.getElementById('adminPanel');
+            if (adminAberto) {
+                painel.classList.add('open');
+            } else {
+                painel.classList.remove('open');
+            }
+            renderizarProdutos(categoriaAtual);
+        }
+
+        function fazerLogin() {
+            const u = document.getElementById('usuarioInput').value.trim();
+            const s = document.getElementById('senhaInput').value.trim();
+
+            if (u === ADMIN_USER && s === ADMIN_PASS) {
+                adminLogado = true;
+                document.getElementById('divLogin').style.display = 'none';
+                document.getElementById('divCadastro').style.display = 'block';
+                document.getElementById('usuarioInput').value = '';
+                document.getElementById('senhaInput').value = '';
+                renderizarProdutos(categoriaAtual);
+            } else {
+                alert('Usuário ou senha incorretos!');
+            }
+        }
+
+        function fazerLogout() {
+            adminLogado = false;
+            document.getElementById('divLogin').style.display = 'block';
+            document.getElementById('divCadastro').style.display = 'none';
+            renderizarProdutos(categoriaAtual);
+        }
+
+        function cadastrarProduto() {
+            const nome = document.getElementById('novoNome').value.trim();
+            const categoria = document.getElementById('novaCategoria').value;
+            const preco = parseFloat(document.getElementById('novoPreco').value);
+            const unidade = document.getElementById('novaUnidade').value.trim();
+
+            if (!nome || isNaN(preco) || !unidade) {
+                alert('Por favor, preencha todos os campos corretamente.');
+                return;
+            }
+
+            const novoId = produtos.length > 0 ? Math.max(...produtos.map(p => p.id)) + 1 : 1;
+            produtos.push({ id: novoId, nome, categoria, preco, unidade });
+            localStorage.setItem('mercearia_produtos', JSON.stringify(produtos));
+
+            document.getElementById('novoNome').value = '';
+            document.getElementById('novoPreco').value = '';
+            document.getElementById('novaUnidade').value = '';
+
+            alert('Produto cadastrado com sucesso!');
+            renderizarProdutos(categoriaAtual);
+        }
+
+        function excluirProduto(id) {
+            if (!adminLogado) return;
+            if (confirm('Deseja realmente excluir este produto?')) {
+                produtos = produtos.filter(p => p.id !== id);
+                localStorage.setItem('mercearia_produtos', JSON.stringify(produtos));
+                renderizarProdutos(categoriaAtual);
+            }
+        }
+
+        function renderizarProdutos(categoriaFiltro = 'todos') {
+            categoriaAtual = categoriaFiltro;
+            const grid = document.getElementById('produtosGrid');
+            grid.innerHTML = '';
+
+            const filtrados = categoriaFiltro === 'todos' ? produtos : produtos.filter(p => p.categoria === categoriaFiltro);
+
+            if (filtrados.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">Nenhum produto nesta categoria.</p>`;
+                return;
+            }
+
+            filtrados.forEach(produto => {
+                const card = document.createElement('div');
+                card.className = 'produto-card';
+                
+                let botaoExcluirHtml = (adminAberto && adminLogado) ? `<button class="btn-del-prod" style="display:block;" onclick="excluirProduto(${produto.id})">🗑️</button>` : '';
+
+                card.innerHTML = `
+                    <div class="produto-info">
+                        <h3>${produto.nome}</h3>
+                        <div class="unidade">${produto.unidade}</div>
+                        <div class="preco">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
+                    </div>
+                    <div class="btn-acoes-card">
+                        <button class="btn-add" onclick="adicionarAoCarrinho(${produto.id})">Adicionar</button>
+                        ${botaoExcluirHtml}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filtrarCategoria(categoria) {
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderizarProdutos(categoria);
+        }
+
+        function adicionarAoCarrinho(id) {
+            carrinho[id] = (carrinho[id] || 0) + 1;
+            atualizarCarrinhoFlutuante();
+        }
+
+        function atualizarCarrinhoFlutuante() {
+            let totalItens = 0, valorTotal = 0;
+            for (let id in carrinho) {
+                const qtd = carrinho[id];
+                const prod = produtos.find(p => p.id == id);
+                if (prod) { totalItens += qtd; valorTotal += prod.preco * qtd; }
+            }
+            const barra = document.getElementById('carrinhoFlutuante');
+            const info = document.getElementById('carrinhoInfo');
+            if (totalItens > 0) {
+                barra.style.display = 'flex';
+                info.innerText = `${totalItens} ${totalItens === 1 ? 'item' : 'itens'} | R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+            } else {
+                barra.style.display = 'none';
+            }
+        }
+
+        function abrirModal() {
+            const modal = document.getElementById('modalCheckout');
+            const resumo = document.getElementById('resumoCarrinhoModal');
+            let htmlResumo = '', valorTotal = 0;
+
+            for (let id in carrinho) {
+                const qtd = carrinho[id];
+                const prod = produtos.find(p => p.id == id);
+                if (prod) {
+                    const subtotal = prod.preco * qtd;
+                    valorTotal += subtotal;
+                    htmlResumo += `<div class="resumo-item"><span>${qtd}x ${prod.nome}</span><span>R$ ${subtotal.toFixed(2).replace('.', ',')}</span></div>`;
+                }
+            }
+            htmlResumo += `<hr style="margin: 8px 0; border:0; border-top:1px solid #ddd;">`;
+            htmlResumo += `<div class="resumo-item" style="font-weight: bold;"><span>Total:</span><span>R$ ${valorTotal.toFixed(2).replace('.', ',')}</span></div>`;
+            resumo.innerHTML = htmlResumo;
+            modal.classList.add('open');
+        }
+
+        function fecharModal() { document.getElementById('modalCheckout').classList.remove('open'); }
+
+        function enviarPedidoWhatsApp() {
+            const nome = document.getElementById('inputNome').value.trim();
+            const endereco = document.getElementById('inputEndereco').value.trim();
+            const pagamento = document.getElementById('selectPagamento').value;
+
+            if (!nome || !endereco) {
+                alert('Por favor, preencha seu nome e endereço de entrega.');
+                return;
+            }
+
+            let mensagem = `*🛍️ NOVO PEDIDO - MERCEARIA* \n\n👤 *Cliente:* ${nome}\n📍 *Endereço:* ${endereco}\n💳 *Pagamento:* ${pagamento}\n\n----------------------------------------\n*ITENS DO PEDIDO:*\n`;
+            let valorTotal = 0;
+
+            for (let id in carrinho) {
+                const qtd = carrinho[id];
+                const prod = produtos.find(p => p.id == id);
+                if (prod) {
+                    const subtotal = prod.preco * qtd;
+                    valorTotal += subtotal;
+                    mensagem += `• ${qtd}x ${prod.nome} (R$ ${subtotal.toFixed(2).replace('.', ',')})\n`;
+                }
+            }
+            mensagem += `----------------------------------------\n💰 *Total a Pagar:* R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+
+            window.open(`https://wa.me/5511954207725?text=${encodeURIComponent(mensagem)}`, '_blank');
+            carrinho = {};
+            atualizarCarrinhoFlutuante();
+            fecharModal();
+        }
+
+        renderizarProdutos();
+    </script>
+</body>
+</html>
