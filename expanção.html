@@ -28,6 +28,7 @@
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
 
         .btn-salvar { background-color: #2e7d32; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.95rem; }
+        .btn-cancelar-edicao { background-color: #757575; color: #fff; border: none; padding: 8px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.85rem; margin-top: 5px; display: none; }
         .btn-login { background-color: #1b5e20; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 0.95rem; }
 
         /* Abas de Categorias */
@@ -42,9 +43,10 @@
         .produto-info .unidade { font-size: 0.75rem; color: #777; margin-bottom: 8px; }
         .produto-info .preco { font-size: 1rem; font-weight: bold; color: #1b5e20; margin-bottom: 10px; }
 
-        .btn-acoes-card { display: flex; gap: 5px; }
-        .btn-add { background-color: #2e7d32; color: #fff; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: 600; flex: 1; }
-        .btn-del-prod { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; display: none; }
+        .btn-acoes-card { display: flex; gap: 5px; flex-wrap: wrap; }
+        .btn-add { background-color: #2e7d32; color: #fff; border: none; padding: 8px; border-radius: 5px; cursor: pointer; font-size: 0.85rem; font-weight: 600; flex: 1 1 100%; }
+        .btn-edit-prod { background-color: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; display: none; flex: 1; }
+        .btn-del-prod { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 0.8rem; display: none; flex: 1; }
 
         /* Carrinho Flutuante e Modal */
         .carrinho-flutuante { position: fixed; bottom: 0; left: 0; width: 100%; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); padding: 15px; display: none; justify-content: space-between; align-items: center; z-index: 100; }
@@ -75,7 +77,7 @@
             <button class="btn-admin-toggle" onclick="alternarPainelAdmin()">⚙️ Painel Admin</button>
         </div>
 
-        <!-- Painel de Login e Cadastro -->
+        <!-- Painel de Login e Cadastro/Edição -->
         <div class="admin-panel" id="adminPanel">
             <!-- Tela de Login -->
             <div id="divLogin">
@@ -91,12 +93,13 @@
                 <button class="btn-login" onclick="fazerLogin()">Entrar</button>
             </div>
 
-            <!-- Tela de Cadastro -->
+            <!-- Tela de Cadastro/Edição -->
             <div id="divCadastro" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <h3 style="margin: 0;">➕ Cadastrar Novo Produto</h3>
+                    <h3 id="tituloFormulario" style="margin: 0;">➕ Cadastrar Novo Produto</h3>
                     <button onclick="fazerLogout()" style="background: #c62828; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Sair</button>
                 </div>
+                <input type="hidden" id="editandoId" value="">
                 <div class="form-group">
                     <label>Nome do Produto:</label>
                     <input type="text" id="novoNome" placeholder="Ex: Café Torrado 500g">
@@ -118,7 +121,8 @@
                     <label>Unidade de Medida:</label>
                     <input type="text" id="novaUnidade" placeholder="Ex: Unidade, Quilo (kg), Pacote 1kg">
                 </div>
-                <button class="btn-salvar" onclick="cadastrarProduto()">Salvar e Publicar Produto</button>
+                <button class="btn-salvar" id="btnSalvarProduto" onclick="salvarProduto()">Salvar Produto</button>
+                <button class="btn-cancelar-edicao" id="btnCancelarEdicao" onclick="limparFormulario()">Cancelar Edição</button>
             </div>
         </div>
 
@@ -174,12 +178,12 @@
         const ADMIN_PASS = "1234";
 
         const produtosIniciais = [
-            { id: 1, nome: "Arroz Branco 5kg", categoria: "mercearia", preco: 30.90, unidade: "Fardo 5kg" },
+            { id: 1, nome: "Arroz Branco 5kg", categoria: "mercearia", preco: 24.90, unidade: "Fardo 5kg" },
             { id: 2, nome: "Feijão Carioca 1kg", categoria: "mercearia", preco: 8.50, unidade: "Pacote 1kg" },
-            { id: 3, nome: "Óleo de Soja 900ml", categoria: "mercearia", preco: 10.00, unidade: "Unidade" },
+            { id: 3, nome: "Óleo de Soja 900ml", categoria: "mercearia", preco: 6.90, unidade: "Unidade" },
             { id: 4, nome: "Banana Prata", categoria: "hortifruti", preco: 5.99, unidade: "Quilo (kg)" },
             { id: 5, nome: "Tomate Longa Vida", categoria: "hortifruti", preco: 7.50, unidade: "Quilo (kg)" },
-            { id: 6, nome: "Refrigerante Cola 2L", categoria: "bebidas", preco: 14.50, unidade: "Garrafa 2L" },
+            { id: 6, nome: "Refrigerante Cola 2L", categoria: "bebidas", preco: 9.50, unidade: "Garrafa 2L" },
             { id: 7, nome: "Detergente Líquido 500ml", categoria: "limpeza", preco: 2.50, unidade: "Unidade" }
         ];
 
@@ -218,12 +222,14 @@
 
         function fazerLogout() {
             adminLogado = false;
+            limparFormulario();
             document.getElementById('divLogin').style.display = 'block';
             document.getElementById('divCadastro').style.display = 'none';
             renderizarProdutos(categoriaAtual);
         }
 
-        function cadastrarProduto() {
+        function salvarProduto() {
+            const idEditando = document.getElementById('editandoId').value;
             const nome = document.getElementById('novoNome').value.trim();
             const categoria = document.getElementById('novaCategoria').value;
             const preco = parseFloat(document.getElementById('novoPreco').value);
@@ -234,16 +240,53 @@
                 return;
             }
 
-            const novoId = produtos.length > 0 ? Math.max(...produtos.map(p => p.id)) + 1 : 1;
-            produtos.push({ id: novoId, nome, categoria, preco, unidade });
-            localStorage.setItem('mercearia_produtos', JSON.stringify(produtos));
+            if (idEditando) {
+                // Modo Edição
+                const index = produtos.findIndex(p => p.id == idEditando);
+                if (index !== -1) {
+                    produtos[index] = { id: parseInt(idEditando), nome, categoria, preco, unidade };
+                    alert('Produto atualizado com sucesso!');
+                }
+            } else {
+                // Modo Cadastro
+                const novoId = produtos.length > 0 ? Math.max(...produtos.map(p => p.id)) + 1 : 1;
+                produtos.push({ id: novoId, nome, categoria, preco, unidade });
+                alert('Produto cadastrado com sucesso!');
+            }
 
+            localStorage.setItem('mercearia_produtos', JSON.stringify(produtos));
+            limparFormulario();
+            renderizarProdutos(categoriaAtual);
+        }
+
+        function editarProduto(id) {
+            const prod = produtos.find(p => p.id == id);
+            if (!prod) return;
+
+            document.getElementById('editandoId').value = prod.id;
+            document.getElementById('novoNome').value = prod.nome;
+            document.getElementById('novaCategoria').value = prod.categoria;
+            document.getElementById('novoPreco').value = prod.preco;
+            document.getElementById('novaUnidade').value = prod.unidade;
+
+            document.getElementById('tituloFormulario').innerText = "✏️ Editar Produto";
+            document.getElementById('btnSalvarProduto').innerText = "Atualizar Produto";
+            document.getElementById('btnCancelarEdicao').style.display = "block";
+
+            // Garante que o painel administrativo esteja visível
+            if (!adminAberto) alternarPainelAdmin();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limparFormulario() {
+            document.getElementById('editandoId').value = '';
             document.getElementById('novoNome').value = '';
             document.getElementById('novoPreco').value = '';
             document.getElementById('novaUnidade').value = '';
 
-            alert('Produto cadastrado com sucesso!');
-            renderizarProdutos(categoriaAtual);
+            document.getElementById('tituloFormulario').innerText = "➕ Cadastrar Novo Produto";
+            document.getElementById('btnSalvarProduto').innerText = "Salvar Produto";
+            document.getElementById('btnCancelarEdicao').style.display = "none";
         }
 
         function excluirProduto(id) {
@@ -271,7 +314,10 @@
                 const card = document.createElement('div');
                 card.className = 'produto-card';
                 
-                let botaoExcluirHtml = (adminAberto && adminLogado) ? `<button class="btn-del-prod" style="display:block;" onclick="excluirProduto(${produto.id})">🗑️</button>` : '';
+                let botoesAdminHtml = (adminAberto && adminLogado) ? `
+                    <button class="btn-edit-prod" style="display:block;" onclick="editarProduto(${produto.id})">✏️ Editar</button>
+                    <button class="btn-del-prod" style="display:block;" onclick="excluirProduto(${produto.id})">🗑️</button>
+                ` : '';
 
                 card.innerHTML = `
                     <div class="produto-info">
@@ -281,7 +327,7 @@
                     </div>
                     <div class="btn-acoes-card">
                         <button class="btn-add" onclick="adicionarAoCarrinho(${produto.id})">Adicionar</button>
-                        ${botaoExcluirHtml}
+                        ${botoesAdminHtml}
                     </div>
                 `;
                 grid.appendChild(card);
